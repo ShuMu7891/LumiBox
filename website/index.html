@@ -48,6 +48,7 @@
       <a href="#/features" data-nav="features">功能</a>
       <a href="#/gallery" data-nav="gallery">界面</a>
       <a href="#/download" data-nav="download">下载</a>
+      <a href="#/guestbook" data-nav="guestbook">留言</a>
       <a href="#/about" data-nav="about">关于</a>
     </div>
     <span class="dock-sep"></span>
@@ -376,6 +377,89 @@ build.bat</pre></div>
   </div>
 </section>
 
+<!-- ==================== 留言板 ==================== -->
+<section class="page" data-page="guestbook">
+  <div class="wrap">
+    <div class="page-head reveal">
+      <span class="kicker">GUESTBOOK</span>
+      <h1>说点什么，<span class="grad">大家都看得见</span></h1>
+      <p>留言保存在服务端，任何访客打开这个页面都能看到。写下使用感受、功能建议，或只是打个招呼。</p>
+    </div>
+
+    <div class="gb-layout">
+      <!-- 发表表单 -->
+      <div class="gb-form glass reveal">
+        <div class="gb-form-head">
+          <h2>发表留言</h2>
+          <span class="gb-status" id="gbStatus"><i></i> 正在连接…</span>
+        </div>
+        <p class="gb-hint">无需注册。昵称与内容会公开显示，请勿填写手机号、密码等敏感信息。</p>
+        <form id="gbForm" autocomplete="off" novalidate>
+          <label for="gbName">昵称 <span class="gb-count" id="gbNameCount">0 / 20</span></label>
+          <input id="gbName" name="name" type="text" maxlength="20" placeholder="怎么称呼你" required>
+          <label for="gbContent">留言内容 <span class="gb-count" id="gbContentCount">0 / 500</span></label>
+          <textarea id="gbContent" name="content" maxlength="500" rows="5" placeholder="用起来怎么样？有什么想加的功能？" required></textarea>
+          <input class="gb-hp" id="gbHp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <div class="gb-form-foot">
+            <span class="gb-privacy">提交后保存到服务器，不是只存在你自己的浏览器里</span>
+            <button class="btn btn-primary" id="gbSubmit" type="submit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+              发表留言
+            </button>
+          </div>
+          <div class="gb-msg" id="gbMsg" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+
+      <!-- 留言列表 -->
+      <div class="gb-list-wrap glass reveal">
+        <div class="gb-list-head">
+          <h2>大家的话 <span class="gb-total" id="gbTotal">0</span></h2>
+          <button class="gb-refresh" id="gbRefresh" type="button" aria-label="刷新留言">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+            刷新
+          </button>
+        </div>
+        <div class="gb-list" id="gbList" aria-live="polite">
+          <div class="gb-state"><span class="gb-loader"></span><p>正在读取留言…</p></div>
+        </div>
+        <div class="gb-more-wrap" id="gbMoreWrap" hidden>
+          <button class="gb-more" id="gbMore" type="button">加载更多</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 站长管理（折叠） -->
+    <div class="gb-admin glass reveal">
+      <button class="gb-admin-toggle" id="gbAdminToggle" type="button" aria-expanded="false">
+        <span class="gb-admin-ico">⚙</span>
+        <span><strong>站长管理</strong><small>验证口令后可删除违规留言、导出全部留言</small></span>
+        <span class="gb-admin-arrow">⌄</span>
+      </button>
+      <div class="gb-admin-panel" id="gbAdminPanel" hidden>
+        <div class="gb-admin-row">
+          <input id="gbAdminToken" type="password" placeholder="管理口令" autocomplete="off">
+          <button class="btn btn-glass" id="gbAdminLogin" type="button">验证</button>
+          <button class="btn btn-glass" id="gbAdminExport" type="button" disabled>导出 JSON</button>
+          <span class="gb-admin-hint" id="gbAdminHint">口令由服务端的 LUMIBOX_ADMIN_TOKEN 设置</span>
+        </div>
+        <div class="gb-admin-row gb-api-row">
+          <label for="gbApiUrl">留言服务地址</label>
+          <input id="gbApiUrl" type="url" placeholder="留空 = 同源 /api（由 server.py 托管）" autocomplete="off" spellcheck="false">
+          <button class="btn btn-glass" id="gbApiSave" type="button">保存</button>
+          <button class="btn btn-glass" id="gbApiReset" type="button">恢复同源</button>
+          <span class="gb-admin-hint" id="gbApiHint">静态托管时填后端地址，例如 https://api.example.com</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="note glass reveal">
+      <span class="note-ico">i</span>
+      <p>留言存于服务端 <code>data/messages.json</code>，不会写进浏览器缓存。站长可随时导出备份或删除内容；同一 IP 30 秒内最多 30 条、相同内容 60 秒内不可重复发表，避免刷屏。</p>
+    </div>
+  </div>
+</section>
+
 <!-- ==================== GitHub 重定向中转页 ==================== -->
 <section class="page" data-page="go">
   <div class="wrap go-wrap">
@@ -409,6 +493,7 @@ build.bat</pre></div>
       <a href="https://github.com/ShuMu7891/LumiBox" data-go="repo">GitHub</a>
       <a href="https://github.com/ShuMu7891/LumiBox/releases" data-go="releases">下载</a>
       <a href="https://github.com/ShuMu7891/LumiBox/issues" data-go="issues">反馈</a>
+      <a href="#/guestbook" data-nav="guestbook">留言</a>
       <a href="#/about" data-nav="about">关于</a>
     </div>
     <div class="foot-copy">MIT © <span id="year">2026</span> LumiBox · 100% 本地运算</div>

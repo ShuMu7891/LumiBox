@@ -248,8 +248,322 @@
     });
   }
 
+  /* ============================================================
+     留言板 · 真实服务端 API 客户端
+     - 留言一律从服务端读取 / 提交，绝不写入 localStorage 假装成功
+     - API 地址优先级：?api= 参数 > localStorage > 全局配置 > 同源
+     - 所有用户内容用 textContent 渲染，杜绝 XSS
+     ============================================================ */
+  var GB = (function () {
+    var PAGE_SIZE = 12;
+    var adminToken = '';
+    var offset = 0;
+    var total = 0;
+    var busy = false;
+    var reqSeq = 0;                 // 防止旧请求覆盖新状态
+    var inited = false;
+
+    function apiBase() {
+      var q = new URLSearchParams(location.search).get('api');
+      if (q) return q.replace(/\/+$/, '');
+      try {
+        var saved = localStorage.getItem('lumibox-gb-api');
+        if (saved) return saved.replace(/\/+$/, '');
+      } catch (e) {}
+      if (window.LUMIBOX_API_BASE) return String(window.LUMIBOX_API_BASE).replace(/\/+$/, '');
+      return '';                    // 同源：由 server.py 一起托管，或反代 /api
+    }
+
+    function url(path) { return apiBase() + path; }
+
+    function status(kind, text) {
+      var el = $('#gbStatus');
+      if (!el) return;
+      el.className = 'gb-status' + (kind ? ' ' + kind : '');
+      el.innerHTML = '';
+      var dot = document.createElement('i');
+      el.appendChild(dot);
+      el.appendChild(document.createTextNode(' ' + text));
+    }
+
+    function msg(kind, text) {
+      var el = $('#gbMsg');
+      if (!el) return;
+      el.className = 'gb-msg show ' + kind;
+      el.textContent = text;
+      if (kind === 'ok') setTimeout(function () {
+        if (el.textContent === text) el.className = 'gb-msg';
+      }, 5000);
+    }
+
+    function escState(icon, title, sub, retry) {
+      var box = $('#gbList');
+      box.innerHTML = '';
+      var st = document.createElement('div');
+      st.className = 'gb-state';
+      var ic = document.createElement('div');
+      ic.className = 'gb-ico'; ic.textContent = icon;
+      var p = document.createElement('p');
+      p.textContent = title;
+      var small = document.createElement('p');
+      small.style.fontSize = '12px'; small.style.opacity = '.8';
+      small.textContent = sub || '';
+      st.appendChild(ic); st.appendChild(p);
+      if (sub) st.appendChild(small);
+      if (retry) {
+        var btn = document.createElement('button');
+        btn.className = 'gb-retry'; btn.type = 'button'; btn.textContent = '重试';
+        btn.addEventListener('click', function () { load(true); });
+        st.appendChild(btn);
+        var cfg = document.createElement('button');
+        cfg.className = 'gb-retry'; cfg.type = 'button'; cfg.textContent = '设置服务地址';
+        cfg.style.marginLeft = '8px';
+        cfg.addEventListener('click', function () {
+          var panel = $('#gbAdminPanel'), toggle = $('#gbAdminToggle');
+          panel.hidden = false; toggle.setAttribute('aria-expanded', 'true');
+          panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(function () { $('#gbApiUrl').focus(); }, 350);
+        });
+        st.appendChild(cfg);
+      }
+      box.appendChild(st);
+    }
+
+    function relTime(iso) {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      var diff = (Date.now() - d.getTime()) / 1000;
+      if (diff < 60) return '刚刚';
+      if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
+      if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
+      if (diff < 86400 * 7) return Math.floor(diff / 86400) + ' 天前';
+      // 服务端时间为 UTC，转换成本地时间展示
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' +
+             String(d.getDate()).padStart(2, '0') + ' ' +
+             String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    var AVATAR_COLORS = ['#3b7bf0', '#7a5cf0', '#e35f9b', '#1eab9c', '#e08b28', '#5a70d8', '#d4566b'];
+    function avatarColor(name) {
+      var h = 0;
+      for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+      return AVATAR_COLORS[h % AVATAR_COLORS.length];
+    }
+
+    function cardNode(item) {
+      var card = document.createElement('article');
+      card.className = 'gb-card';
+      card.dataset.id = item.id;
+
+      var top = document.createElement('div'); top.className = 'gb-card-top';
+      var av = document.createElement('div'); av.className = 'gb-avatar';
+      av.style.background = avatarColor(item.name || '?');
+      av.textContent = (item.name || '?').trim().charAt(0).toUpperCase();
+      var who = document.createElement('div'); who.className = 'gb-card-who';
+      var nm = document.createElement('div'); nm.className = 'gb-card-name'; nm.textContent = item.name;
+      var tm = document.createElement('div'); tm.className = 'gb-card-time'; tm.textContent = relTime(item.created_at);
+      who.appendChild(nm); who.appendChild(tm);
+      var seq = document.createElement('span'); seq.className = 'gb-seq';
+      seq.textContent = '#' + item.seq;
+      top.appendChild(av); top.appendChild(who); top.appendChild(seq);
+
+      var body = document.createElement('div'); body.className = 'gb-card-body';
+      body.textContent = item.content;                 // 关键：纯文本，不解析 HTML
+
+      var del = document.createElement('button');
+      del.className = 'gb-card-del'; del.type = 'button';
+      del.textContent = '✕'; del.title = '删除这条留言';
+      del.hidden = !adminToken;
+      del.addEventListener('click', function () { remove(item.id); });
+
+      card.appendChild(top); card.appendChild(body); card.appendChild(del);
+      return card;
+    }
+
+    function renderItems(items, append) {
+      var box = $('#gbList');
+      if (!append) box.innerHTML = '';
+      // 首条为加载占位时清空
+      var ph = box.querySelector('.gb-state');
+      if (ph) ph.remove();
+      items.forEach(function (it) { box.appendChild(cardNode(it)); });
+      $('#gbTotal').textContent = total;
+      $('#gbMoreWrap').hidden = !(offset < total);
+      if (total === 0) escState('✎', '还没有人留言', '来当第一个吧，留言会保存到服务器上。', false);
+    }
+
+    async function load(reset) {
+      if (busy) return;
+      busy = true;
+      var my = ++reqSeq;
+      if (reset) { offset = 0; $('#gbList').innerHTML = '<div class="gb-state"><span class="gb-loader"></span><p>正在读取留言…</p></div>'; }
+      var btn = $('#gbRefresh'); btn.classList.add('spin');
+      try {
+        var r = await fetch(url('/api/messages?offset=' + offset + '&limit=' + PAGE_SIZE),
+                            { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        var d = await r.json();
+        if (my !== reqSeq) return;                  // 已有更新的请求，丢弃旧结果
+        if (!d.ok) throw new Error(d.error || '服务返回异常');
+        total = d.total;
+        offset += d.items.length;
+        status('on', '已连接 · 共 ' + total + ' 条');
+        renderItems(d.items, !reset);
+      } catch (e) {
+        if (my !== reqSeq) return;
+        status('off', '未连接服务');
+        escState('⚠', '读不到留言', '无法连接留言服务（' + e.message + '）。留言保存在服务端，请确认后端已启动。', true);
+        $('#gbMoreWrap').hidden = true;
+      } finally {
+        if (my === reqSeq) btn.classList.remove('spin');
+        busy = false;
+      }
+    }
+
+    async function submit(e) {
+      e.preventDefault();
+      var nameEl = $('#gbName'), contentEl = $('#gbContent'), btn = $('#gbSubmit');
+      var name = nameEl.value.trim(), content = contentEl.value.trim();
+      if (!name) { msg('err', '请填写昵称'); nameEl.focus(); return; }
+      if (!content) { msg('err', '留言内容不能为空'); contentEl.focus(); return; }
+      if (name.length > 20 || content.length > 500) { msg('err', '内容超出字数限制'); return; }
+
+      btn.disabled = true;
+      var old = btn.innerHTML;
+      btn.textContent = '发表中…';
+      try {
+        var r = await fetch(url('/api/messages'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, content: content, website: $('#gbHp').value })
+        });
+        var d = await r.json();
+        if (!r.ok || !d.ok) throw new Error(d.error || ('HTTP ' + r.status));
+        // 成功后重新从服务端读取（不本地追加），确认它真的落库
+        contentEl.value = '';
+        updateCount();
+        try { localStorage.setItem('lumibox-gb-name', name); } catch (err) {}
+        await load(true);
+        msg('ok', '已保存到服务器！其他访客刷新页面就能看到这条留言。');
+      } catch (err) {
+        // 明确失败，绝不伪造一条本地留言
+        status('off', '未连接服务');
+        msg('err', '发表失败：' + err.message + '。内容未保存，请稍后重试。');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = old;
+      }
+    }
+
+    async function remove(id) {
+      if (!adminToken) return;
+      if (!window.confirm('确定删除这条留言？此操作不可撤销。')) return;
+      try {
+        var r = await fetch(url('/api/messages/' + encodeURIComponent(id)), {
+          method: 'DELETE', headers: { 'X-Admin-Token': adminToken }
+        });
+        var d = await r.json();
+        if (!r.ok || !d.ok) throw new Error(d.error || ('HTTP ' + r.status));
+        await load(true);
+        msg('ok', '已删除。');
+      } catch (e) { msg('err', '删除失败：' + e.message); }
+    }
+
+    function updateCount() {
+      var n = $('#gbName'), c = $('#gbContent');
+      var nc = $('#gbNameCount'), cc = $('#gbContentCount');
+      nc.textContent = n.value.length + ' / 20';
+      cc.textContent = c.value.length + ' / 500';
+      nc.classList.toggle('warn', n.value.length >= 20);
+      cc.classList.toggle('warn', c.value.length >= 480);
+    }
+
+    function initAdmin() {
+      var toggle = $('#gbAdminToggle'), panel = $('#gbAdminPanel');
+      toggle.addEventListener('click', function () {
+        var open = panel.hidden;
+        panel.hidden = !open;
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      $('#gbAdminLogin').addEventListener('click', async function () {
+        var token = $('#gbAdminToken').value.trim();
+        var hint = $('#gbAdminHint');
+        if (!token) { hint.textContent = '请输入口令'; return; }
+        try {
+          var r = await fetch(url('/api/export'), { headers: { 'X-Admin-Token': token } });
+          var d = await r.json();
+          if (!r.ok || !d.ok) throw new Error(d.error || ('HTTP ' + r.status));
+          adminToken = token;
+          $('#gbAdminExport').disabled = false;
+          hint.textContent = '✓ 口令正确，共 ' + d.total + ' 条留言';
+          $$('.gb-card-del').forEach(function (b) { b.hidden = false; });
+          msg('ok', '管理权限已启用，可删除留言或导出备份。');
+        } catch (e) { hint.textContent = '✗ ' + e.message; }
+      });
+      $('#gbAdminExport').addEventListener('click', async function () {
+        if (!adminToken) return;
+        try {
+          var r = await fetch(url('/api/export'), { headers: { 'X-Admin-Token': adminToken } });
+          var d = await r.json();
+          var blob = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' });
+          var a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'lumibox-messages-' + new Date().toISOString().slice(0, 10) + '.json';
+          a.click();
+          setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+        } catch (e) { msg('err', '导出失败：' + e.message); }
+      });
+      // 静态托管场景：把前端指向独立部署的留言后端
+      var apiInput = $('#gbApiUrl'), apiHint = $('#gbApiHint');
+      try { apiInput.value = localStorage.getItem('lumibox-gb-api') || ''; } catch (e) {}
+      $('#gbApiSave').addEventListener('click', function () {
+        var v = apiInput.value.trim().replace(/\/+$/, '');
+        if (v && !/^https?:\/\//i.test(v)) {
+          apiHint.textContent = '✗ 请填写完整地址，以 http:// 或 https:// 开头';
+          return;
+        }
+        try {
+          if (v) localStorage.setItem('lumibox-gb-api', v);
+          else localStorage.removeItem('lumibox-gb-api');
+        } catch (e) {}
+        apiHint.textContent = v ? '✓ 已保存，正在重新连接…' : '✓ 已恢复同源，正在重新连接…';
+        load(true);
+      });
+      $('#gbApiReset').addEventListener('click', function () {
+        apiInput.value = '';
+        try { localStorage.removeItem('lumibox-gb-api'); } catch (e) {}
+        apiHint.textContent = '✓ 已恢复同源，正在重新连接…';
+        load(true);
+      });
+    }
+
+    function init() {
+      if (inited) return;
+      inited = true;
+      $('#gbForm').addEventListener('submit', submit);
+      $('#gbName').addEventListener('input', updateCount);
+      $('#gbContent').addEventListener('input', updateCount);
+      $('#gbRefresh').addEventListener('click', function () { load(true); });
+      $('#gbMore').addEventListener('click', function () { load(false); });
+      try {
+        var saved = localStorage.getItem('lumibox-gb-name');
+        if (saved) $('#gbName').value = saved;
+      } catch (e) {}
+      updateCount();
+      initAdmin();
+    }
+
+    return {
+      enter: function () {
+        init();
+        status('', '正在连接…');
+        load(true);                                 // 每次进入都重新拉取，看到别人新发的
+      }
+    };
+  })();
+
   /* ---------------- 路由 ---------------- */
-  var PAGES = ['home', 'features', 'gallery', 'download', 'about', 'go'];
+  var PAGES = ['home', 'features', 'gallery', 'download', 'about', 'guestbook', 'go'];
 
   function render() {
     var r = parseHash();
@@ -270,13 +584,15 @@
     document.title = ({
       home: 'LumiBox · Windows 综合工具箱',
       features: '功能 · LumiBox', gallery: '界面预览 · LumiBox',
-      download: '下载 · LumiBox', about: '关于 · LumiBox', go: '正在跳转 · LumiBox'
+      download: '下载 · LumiBox', about: '关于 · LumiBox',
+      guestbook: '留言板 · LumiBox', go: '正在跳转 · LumiBox'
     })[page];
 
     window.scrollTo(0, 0);
     revealIn(current);
     countUp(current);
     if (page === 'go') startRedirect(r.params.get('to') || 'repo');
+    if (page === 'guestbook') GB.enter();
     $('#year').textContent = new Date().getFullYear();
   }
 
