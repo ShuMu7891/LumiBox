@@ -1,0 +1,28 @@
+PySide6>=6.6
+psutil>=5.9
+qrcode>=7.4
+Pillow>=10.0
+requests>=2.31
+pyinstaller>=6.0
+
+# ---- 二维码 / 文档转换 ----
+zxing-cpp>=2.0          # 二维码 / 条码解析（本地解码，无需系统库）
+python-pptx>=0.6.21     # PPTX 读写
+PyMuPDF>=1.23           # PDF 逐页渲染（PDF -> PPTX）
+reportlab>=4.0          # PPTX -> 文本版 PDF（无 LibreOffice 时的降级方案）
+
+# ---- 文件管家 / 系统增强 / 文档工坊 ----
+cryptography>=42.0      # 密码保险箱 AES 加密
+PyYAML>=6.0             # YAML 读写（格式互转）
+tomli-w>=1.0            # TOML 写出（读取用 Python 3.11 内置 tomllib）
+markdown>=3.5           # Markdown -> HTML
+weasyprint>=60.0        # HTML -> PDF（Markdown 导出 PDF）
+openpyxl>=3.1           # CSV <-> Excel 互转
+pytesseract>=0.3.10     # OCR 封装（需系统安装 tesseract-ocr）
+
+# ---- 可选（自动探测，缺失不影响使用）----
+# opencv-python-headless   # 二维码解析备用引擎
+# pyzbar                   # 二维码解析备用引擎（Windows 需 libzbar DLL）
+# uncompyle6 / decompyle3 / pycdc   # 反编译页可选的外部源码还原工具
+# send2trash               # 重复文件清理送入回收站（否则直接删除）
+# tesseract-ocr / tesseract-ocr-chi-sim   # 系统级 OCR 引擎与中文语言包（非 pip 包）
