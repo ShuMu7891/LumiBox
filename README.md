@@ -11,8 +11,11 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%2F11-0078d4?logo=windows&logoColor=white)](https://github.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-1.2.0-blue)]()
+[![官网](https://img.shields.io/badge/官网-lumibox.jhhcn.icu-2f6fe8?logo=google-chrome&logoColor=white)](http://lumibox.jhhcn.icu/)
 
 **无账号 · 无联网上报 · 数据不出机**
+
+> 🌐 **官方网站：[http://lumibox.jhhcn.icu/](http://lumibox.jhhcn.icu/)** —— 功能介绍、界面预览与下载入口
 
 </div>
 
@@ -109,6 +112,8 @@ CPU / 内存 / 磁盘 / 交换分区实时监控、上下行网速、运行时�
 ```bash
 git clone https://github.com/ShuMu7891/LumiBox.git
 ```
+
+也可以从 **官网 [http://lumibox.jhhcn.icu/](http://lumibox.jhhcn.icu/) 的「下载」页面** 或 [Releases](https://github.com/ShuMu7891/LumiBox/releases) 直接获取 `LumiBox_win-toolbox.zip`。
 
 解压或克隆后，在 Windows 上：
 

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>LumiBox · Windows 综合工具箱</title>
+<meta name="description" content="LumiBox 是一个基于 Python + PySide6 的 Windows 综合工具箱：13 个页面、27+ 实用工具、液态玻璃界面、100% 本地运算。">
+<meta name="theme-color" content="#eef2fb">
+<meta property="og:title" content="LumiBox · Windows 综合工具箱">
+<meta property="og:description" content="一个安静的窗口，装下 27+ 常用工具。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="http://lumibox.jhhcn.icu/">
+<link rel="icon" href="assets/app_icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="style.css">
+<script>
+  // 主题防闪烁：在 CSS 加载前恢复用户偏好
+  try {
+    var saved = localStorage.getItem('lumibox-theme');
+    var dark = saved ? saved === 'dark'
+      : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  } catch (e) {}
+</script>
+</head>
+<body>
+
+<!-- ============ 液态玻璃背景：流动光斑 + 细网格 ============ -->
+<div class="bg" aria-hidden="true">
+  <div class="bg-grid"></div>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+  <div class="blob blob-4"></div>
+  <div class="bg-noise"></div>
+</div>
+
+<!-- ============ 悬浮胶囊导航（灵动岛风格） ============ -->
+<header class="dock-wrap">
+  <nav class="dock glass" aria-label="主导航">
+    <a class="dock-brand" href="#/" data-nav="home" aria-label="LumiBox 首页">
+      <span class="brand-mark">L</span>
+      <span class="brand-name">LumiBox</span>
+    </a>
+    <span class="dock-sep"></span>
+    <div class="dock-links" id="dockLinks">
+      <a href="#/" data-nav="home">首页</a>
+      <a href="#/features" data-nav="features">功能</a>
+      <a href="#/gallery" data-nav="gallery">界面</a>
+      <a href="#/download" data-nav="download">下载</a>
+      <a href="#/about" data-nav="about">关于</a>
+    </div>
+    <span class="dock-sep"></span>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="切换深浅主题" title="切换主题">
+      <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <a class="dock-gh" href="https://github.com/ShuMu7891/LumiBox" data-go="repo" aria-label="在 GitHub 查看源码">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.11.79-.25.79-.56v-2.2c-3.22.7-3.9-1.37-3.9-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.16.08 1.78 1.2 1.78 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.57-.29-5.27-1.29-5.27-5.73 0-1.27.45-2.3 1.19-3.11-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.11 0 4.45-2.71 5.43-5.29 5.72.42.36.79 1.06.79 2.14v3.17c0 .31.21.68.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+      <span>GitHub</span>
+    </a>
+    <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="展开菜单" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </nav>
+</header>
+
+<main id="app">
+
+<!-- ==================== 首页 ==================== -->
+<section class="page active" data-page="home">
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow glass reveal">
+          <span class="pulse"></span> v1.2.0 已发布 · 开源免费 · MIT
+        </div>
+        <h1 class="reveal">把常用小工具，<br>放进一个<span class="grad">安静的窗口</span></h1>
+        <p class="hero-sub reveal">LumiBox 是一个 Windows 桌面综合工具箱。<br>系统监控、开发调试、文件整理、文档处理、专注计时 —— 十三个页面，全部本地运行。</p>
+        <div class="hero-actions reveal">
+          <a class="btn btn-primary" href="https://github.com/ShuMu7891/LumiBox/releases/download/v1.2.0/LumiBox_win-toolbox.zip" data-go="release">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>
+            下载 Windows 版
+            <span class="btn-meta">17 MB</span>
+          </a>
+          <a class="btn btn-glass" href="https://github.com/ShuMu7891/LumiBox" data-go="repo">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.11.79-.25.79-.56v-2.2c-3.22.7-3.9-1.37-3.9-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.16.08 1.78 1.2 1.78 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.57-.29-5.27-1.29-5.27-5.73 0-1.27.45-2.3 1.19-3.11-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.11 0 4.45-2.71 5.43-5.29 5.72.42.36.79 1.06.79 2.14v3.17c0 .31.21.68.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+            查看源码
+          </a>
+        </div>
+        <div class="hero-trust reveal">
+          <span><i class="dot"></i> 无账号</span>
+          <span><i class="dot"></i> 无数据上报</span>
+          <span><i class="dot"></i> 所有计算留在本机</span>
+        </div>
+      </div>
+
+      <div class="hero-visual reveal">
+        <div class="app-window glass">
+          <div class="win-bar">
+            <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+            <span class="win-title">LumiBox — 总览</span>
+          </div>
+          <img src="assets/preview/01_overview.webp" alt="LumiBox 总览界面截图" loading="eager">
+        </div>
+        <div class="float-card float-a glass">
+          <span class="fc-label">CPU</span>
+          <span class="fc-value">23<span class="fc-unit">%</span></span>
+          <svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none"><polyline points="0,22 12,18 24,21 36,10 48,15 60,8 72,13 84,6 100,11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="float-card float-b glass">
+          <span class="fc-badge">27+</span>
+          <span class="fc-text">实用工具<br><small>一个窗口</small></span>
+        </div>
+        <div class="float-card float-c glass">
+          <span class="fc-check">✓</span>
+          <span class="fc-text">100% 本地运算<br><small>数据不出机</small></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据条 -->
+    <div class="stats glass reveal">
+      <div class="stat"><strong data-count="13">13</strong><span>功能页面</span></div>
+      <div class="stat"><strong data-count="27" data-suffix="+">27+</strong><span>实用工具</span></div>
+      <div class="stat"><strong data-count="32">32</strong><span>界面预览图</span></div>
+      <div class="stat"><strong data-count="100" data-suffix="%">100%</strong><span>本地运算</span></div>
+      <div class="stat"><strong data-count="0">0</strong><span>数据上报</span></div>
+    </div>
+
+    <!-- 功能速览 -->
+    <div class="section-head reveal">
+      <div><span class="kicker">WHAT'S INSIDE</span><h2>日常要用到的，都在这里</h2></div>
+      <a class="link-arrow" href="#/features" data-nav="features">查看全部功能 <span>→</span></a>
+    </div>
+    <div class="feature-grid">
+      <a class="fcard glass reveal" href="#/features" data-nav="features">
+        <span class="fico fico-blue">◉</span><h3>系统监控</h3><p>CPU、内存、磁盘与进程实时曲线，一屏了然。</p><span class="fcard-tag">8 项工具</span>
+      </a>
+      <a class="fcard glass reveal" href="#/features" data-nav="features">
+        <span class="fico fico-teal">⌘</span><h3>开发效能</h3><p>进制、编码、UUID、pyc 反汇编、剪贴板历史。</p><span class="fcard-tag">8 项工具</span>
+      </a>
+      <a class="fcard glass reveal" href="#/features" data-nav="features">
+        <span class="fico fico-purple">▤</span><h3>文件与文档</h3><p>去重、批量重命名、粉碎、格式互转与 OCR。</p><span class="fcard-tag">8 项工具</span>
+      </a>
+      <a class="fcard glass reveal" href="#/features" data-nav="features">
+        <span class="fico fico-pink">◐</span><h3>截图与专注</h3><p>框选贴图、番茄钟与待办，随手就能开始。</p><span class="fcard-tag">8 项工具</span>
+      </a>
+      <a class="fcard glass reveal" href="#/features" data-nav="features">
+        <span class="fico fico-orange">◈</span><h3>图片与颜色</h3><p>缩放转换、点击取色、HEX ↔ RGB / HSL 配色。</p><span class="fcard-tag">7 类换算</span>
+      </a>
+      <a class="fcard glass reveal" href="#/features" data-nav="features">
+        <span class="fico fico-indigo">≡</span><h3>双主题与热键</h3><p>亮 / 暗液态玻璃，托盘常驻与全局快捷键。</p><span class="fcard-tag">全局能力</span>
+      </a>
+    </div>
+
+    <!-- 结尾 CTA -->
+    <div class="cta glass reveal">
+      <div class="cta-glow"></div>
+      <div class="cta-copy"><span class="kicker">OPEN SOURCE</span><h2>免费、开源，装好就能用。</h2><p>MIT 协议 · Python 3.10+ · Windows 10 / 11</p></div>
+      <div class="cta-btns">
+        <a class="btn btn-primary" href="https://github.com/ShuMu7891/LumiBox/releases/download/v1.2.0/LumiBox_win-toolbox.zip" data-go="release">立即下载</a>
+        <a class="btn btn-glass" href="https://github.com/ShuMu7891/LumiBox" data-go="repo">GitHub ↗</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 功能页 ==================== -->
+<section class="page" data-page="features">
+  <div class="wrap">
+    <div class="page-head reveal">
+      <span class="kicker">FEATURES</span>
+      <h1>十三个页面，<span class="grad">二十七般工具</span></h1>
+      <p>UI 与逻辑分离，所有计算留在本机。点开分类，看看每个页面都装了什么。</p>
+    </div>
+
+    <div class="tabs glass reveal" id="featureTabs" role="tablist">
+      <button class="tab active" data-cat="sys" role="tab">系统 · 运维</button>
+      <button class="tab" data-cat="dev" role="tab">开发 · 效能</button>
+      <button class="tab" data-cat="file" role="tab">文件 · 文档</button>
+      <button class="tab" data-cat="focus" role="tab">图像 · 效率</button>
+    </div>
+
+    <div class="panels" id="featurePanels">
+      <div class="panel active" data-cat="sys">
+        <div class="tool-grid">
+          <div class="tool glass reveal"><span class="tnum">01</span><h3>系统监控</h3><p>CPU / 内存 / 磁盘 / 交换分区实时曲线、上下行网速、运行时长、内存占用 Top 进程。</p><span class="chip">实时</span></div>
+          <div class="tool glass reveal"><span class="tnum">02</span><h3>硬件与磁盘健康</h3><p>硬件详情、分区容量、S.M.A.R.T. 状态、温度与通电时间、I/O 统计。</p><span class="chip">S.M.A.R.T.</span></div>
+          <div class="tool glass reveal"><span class="tnum">03</span><h3>启动项与服务</h3><p>注册表 Run 项、启动文件夹与服务状态管理，开机自启一目了然。</p><span class="chip">需管理员</span></div>
+          <div class="tool glass reveal"><span class="tnum">04</span><h3>端口扫描与测速</h3><p>并发 TCP 探测，支持 <code>80,443,8000-8100</code> 区间语法，测量下载吞吐与延迟。</p><span class="chip">并发</span></div>
+          <div class="tool glass reveal"><span class="tnum">05</span><h3>定时任务</h3><p>倒计时提醒、定时关机 / 重启、自定义命令，关机可随时取消。</p><span class="chip">可取消</span></div>
+          <div class="tool glass reveal"><span class="tnum">06</span><h3>局域网设备扫描</h3><p>ping 并发探测 + ARP 表 MAC + OUI 厂商识别，结果导出 CSV。</p><span class="chip">导出 CSV</span></div>
+          <div class="tool glass reveal"><span class="tnum">07</span><h3>窗口与托盘</h3><p>置顶开关、30%~100% 透明度调节、托盘常驻与全局热键唤出。</p><span class="chip">热键</span></div>
+          <div class="tool glass reveal"><span class="tnum">08</span><h3>hosts 编辑</h3><p>语法解析、预设模板、每次保存自动备份，双击即可恢复。</p><span class="chip">自动备份</span></div>
+        </div>
+      </div>
+
+      <div class="panel" data-cat="dev">
+        <div class="tool-grid">
+          <div class="tool glass reveal"><span class="tnum">01</span><h3>进制转换器</h3><p>2~36 进制即时联动、位宽 / 字节序 / ASCII、位运算与字符码点互换。</p><span class="chip">2–36</span></div>
+          <div class="tool glass reveal"><span class="tnum">02</span><h3>编码转换</h3><p>UTF-8 / GBK / GB18030 / Big5 / Shift-JIS 等 18 种编码互转，HEX 字节视图与乱码修复。</p><span class="chip">18 种</span></div>
+          <div class="tool glass reveal"><span class="tnum">03</span><h3>文本与哈希</h3><p>SHA 家族等 10 种哈希（支持超大文件分块）、Base64 / 32 / 16、JSON 格式化与正则测试。</p><span class="chip">10 种哈希</span></div>
+          <div class="tool glass reveal"><span class="tnum">04</span><h3>随机数与 UUID</h3><p>整数 / 均匀 / 正态 / 抽签，<code>secrets</code> 安全随机源；UUID v1~v7 批量生成最多 10 万条。</p><span class="chip">v1–v7</span></div>
+          <div class="tool glass reveal"><span class="tnum">05</span><h3>反编译分析</h3><p><code>.pyc</code> 头解析 + 字节码反汇编，PyInstaller CArchive / PYZ 归档提取与导出。</p><span class="chip">离线</span></div>
+          <div class="tool glass reveal"><span class="tnum">06</span><h3>剪贴板历史</h3><p>自动捕获 100 条、去重、双击回写、支持导出。</p><span class="chip">100 条</span></div>
+          <div class="tool glass reveal"><span class="tnum">07</span><h3>计算器</h3><p>标准 / 科学 / 程序员三模式，位视图实时联动，支持小键盘全程盲打与历史回填。</p><span class="chip">小键盘</span></div>
+          <div class="tool glass reveal"><span class="tnum">08</span><h3>二维码 · 转盘 · 密码</h3><p>本地二维码生成与解析、缓动转盘开奖、<code>secrets</code> 强密码与熵强度评估。</p><span class="chip">本地</span></div>
+        </div>
+      </div>
+
+      <div class="panel" data-cat="file">
+        <div class="tool-grid">
+          <div class="tool glass reveal"><span class="tnum">01</span><h3>重复文件清理</h3><p>大小分组 → 快速摘要 → 全哈希确认，默认保留原件，结果可导出报告。</p><span class="chip">安全去重</span></div>
+          <div class="tool glass reveal"><span class="tnum">02</span><h3>批量重命名</h3><p>序号 / 前后缀 / 正则 / 大小写 / 时间戳，实时预览、冲突检测、一键撤销。</p><span class="chip">可撤销</span></div>
+          <div class="tool glass reveal"><span class="tnum">03</span><h3>文件粉碎机</h3><p>0 / FF / 随机多轮覆写 + fsync + 改名删除，二次确认防误操作。</p><span class="chip">多轮覆写</span></div>
+          <div class="tool glass reveal"><span class="tnum">04</span><h3>格式互转</h3><p>JSON ↔ YAML ↔ TOML ↔ XML ↔ CSV，CSV ↔ Excel 多工作表互转。</p><span class="chip">5 种格式</span></div>
+          <div class="tool glass reveal"><span class="tnum">05</span><h3>Markdown</h3><p>实时预览，表格与代码高亮，导出 HTML / PDF，附字数统计。</p><span class="chip">实时预览</span></div>
+          <div class="tool glass reveal"><span class="tnum">06</span><h3>OCR 文字识别</h3><p>图片 / 剪贴板 / 扫描页提取文字，PDF 有文本层时直接读取。</p><span class="chip">可选组件</span></div>
+          <div class="tool glass reveal"><span class="tnum">07</span><h3>文档转换</h3><p>PDF → PPTX、PPTX → PDF、PPT ↔ PPTX，逐页高清渲染、版式保真。</p><span class="chip">高清</span></div>
+          <div class="tool glass reveal"><span class="tnum">08</span><h3>密码保险箱</h3><p>Fernet (AES) + PBKDF2（48 万次迭代）本地加密，主密码由你保管。</p><span class="chip">本地加密</span></div>
+        </div>
+      </div>
+
+      <div class="panel" data-cat="focus">
+        <div class="tool-grid">
+          <div class="tool glass reveal"><span class="tnum">01</span><h3>图片处理</h3><p>灰度 / 反色 / 翻转 / 旋转 / 锐化 / 模糊、等比缩放、PNG / JPEG / WEBP / BMP 转换。</p><span class="chip">4 种格式</span></div>
+          <div class="tool glass reveal"><span class="tnum">02</span><h3>取色与配色</h3><p>点击取色、HEX ↔ RGB / HSL / HSV 换算、调色板与随机和谐配色。</p><span class="chip">HSL / HSV</span></div>
+          <div class="tool glass reveal"><span class="tnum">03</span><h3>网络与效率</h3><p>时间戳换算、IP 与网址可达性检测、7 类单位换算、下载吞吐量测试。</p><span class="chip">7 类换算</span></div>
+          <div class="tool glass reveal"><span class="tnum">04</span><h3>截图与贴图</h3><p>全屏 / 框选截图，可缩放、可调透明度的置顶参考图，支持保存 / 复制。</p><span class="chip">置顶</span></div>
+          <div class="tool glass reveal"><span class="tnum">05</span><h3>番茄钟</h3><p>专注 / 短休 / 长休 / 自定义，三种预设，统计持久化到本地。</p><span class="chip">统计</span></div>
+          <div class="tool glass reveal"><span class="tnum">06</span><h3>待办清单</h3><p>优先级、勾选、编辑与导出，本地保存不依赖账号。</p><span class="chip">本地保存</span></div>
+          <div class="tool glass reveal"><span class="tnum">07</span><h3>亮 / 暗双主题</h3><p>液态玻璃自绘控件，低亮度暗色与文字对比度优化，长时间使用也舒适。</p><span class="chip">双主题</span></div>
+          <div class="tool glass reveal"><span class="tnum">08</span><h3>快捷键体系</h3><p><code>Ctrl+1~9</code> 切页、<code>Ctrl+`</code> 隐藏 / 显示、<code>Ctrl+Alt+S</code> 快速截图。</p><span class="chip">全局</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="note glass reveal">
+      <span class="note-ico">i</span>
+      <p>所有功能默认离线运行。仅「公网 IP 查询」「网址可达性检测」「下载测速」会联网；hosts 写入、启动项 / 服务修改、定时关机需要管理员权限。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 界面预览页 ==================== -->
+<section class="page" data-page="gallery">
+  <div class="wrap">
+    <div class="page-head reveal">
+      <span class="kicker">SCREENSHOTS</span>
+      <h1>每一个页面，<span class="grad">都看得见</span></h1>
+      <p>共 32 张真实界面截图，这里精选 18 张。点击任意一张可放大查看。</p>
+    </div>
+    <div class="gallery-filters reveal" id="galleryFilters">
+      <button class="gfilter active" data-filter="all">全部</button>
+      <button class="gfilter" data-filter="light">亮色</button>
+      <button class="gfilter" data-filter="dark">暗色</button>
+    </div>
+    <div class="gallery-grid" id="galleryGrid">
+      <!-- 由 app.js 注入 -->
+    </div>
+    <div class="gallery-more reveal">
+      <a class="btn btn-glass" href="https://github.com/ShuMu7891/LumiBox/tree/main/preview" data-go="preview">在 GitHub 查看全部 32 张 →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 下载页 ==================== -->
+<section class="page" data-page="download">
+  <div class="wrap">
+    <div class="page-head reveal">
+      <span class="kicker">DOWNLOAD</span>
+      <h1>三步，<span class="grad">开始使用</span></h1>
+      <p>一个 zip、两个 bat。装好环境以后，日常双击 <code>run.bat</code> 就能启动。</p>
+    </div>
+
+    <div class="dl-main glass reveal">
+      <div class="dl-icon"><img src="assets/app_icon.png" alt="LumiBox 图标"></div>
+      <div class="dl-info">
+        <div class="dl-badge"><span class="pulse"></span> 最新稳定版</div>
+        <h2>LumiBox v1.2.0</h2>
+        <p class="dl-desc">Windows 10 / 11 · 中文界面 · 含全部 13 个页面与 32 张预览图</p>
+        <div class="dl-meta"><span>约 17 MB</span><span>ZIP 压缩包</span><span>MIT 协议</span><span>无需安装</span></div>
+      </div>
+      <div class="dl-action">
+        <a class="btn btn-primary btn-lg" href="https://github.com/ShuMu7891/LumiBox/releases/download/v1.2.0/LumiBox_win-toolbox.zip" data-go="release">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>
+          下载 v1.2.0
+        </a>
+        <a class="dl-alt" href="https://github.com/ShuMu7891/LumiBox/releases" data-go="releases">前往 Releases 查看历史版本 ↗</a>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step glass reveal"><span class="step-n">01</span><span class="step-en">UNZIP</span><h3>解压</h3><p>下载 zip，解压到任意目录（路径建议不含空格）。</p></div>
+      <div class="step glass reveal"><span class="step-n">02</span><span class="step-en">SETUP</span><h3>安装环境</h3><p>双击 <code>一键安装运行环境.bat</code>，自动检测 Python、安装依赖并自检。</p></div>
+      <div class="step glass reveal"><span class="step-n">03</span><span class="step-en">RUN</span><h3>开始使用</h3><p>之后双击 <code>run.bat</code> 启动；<code>build.bat</code> 可打包独立 exe。</p></div>
+    </div>
+
+    <div class="dl-two">
+      <div class="dl-card glass reveal">
+        <h3><span class="fico fico-blue">◈</span> 环境要求</h3>
+        <ul class="checklist">
+          <li>Windows 10 / 11（64 位）</li>
+          <li>Python 3.10+，安装时勾选 <em>Add to PATH</em></li>
+          <li>依赖由安装脚本自动配置，失败自动切换清华镜像源</li>
+          <li>OCR 需额外安装 tesseract-ocr（含 chi_sim）</li>
+          <li>PPT 旧格式互转需本机 LibreOffice</li>
+        </ul>
+      </div>
+      <div class="dl-card glass reveal">
+        <h3><span class="fico fico-teal">⌘</span> 手动安装 / 打包</h3>
+        <div class="code-block"><span class="code-lang">bash</span><pre>pip install -r requirements.txt
+python main.py
+
+# 打包成独立 exe
+build.bat</pre></div>
+        <div class="dl-links">
+          <a href="https://github.com/ShuMu7891/LumiBox" data-go="repo">GitHub 源码 ↗</a>
+          <a href="https://github.com/ShuMu7891/LumiBox/issues" data-go="issues">问题反馈 ↗</a>
+          <a href="https://github.com/ShuMu7891/LumiBox#readme" data-go="readme">完整文档 ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="note glass reveal">
+      <span class="note-ico">✓</span>
+      <p>绿色软件，不写注册表、不常驻后台服务。所有计算本地完成，卸载时直接删除目录即可。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 关于页 ==================== -->
+<section class="page" data-page="about">
+  <div class="wrap">
+    <div class="page-head reveal">
+      <span class="kicker">ABOUT</span>
+      <h1>安静、克制，<span class="grad">随手可用</span></h1>
+      <p>一个不打扰你的工具箱。没有账号、没有上报、没有云端。</p>
+    </div>
+
+    <div class="about-hero glass reveal">
+      <div class="about-logo"><img src="assets/app_icon.png" alt="LumiBox 图标"></div>
+      <div>
+        <h2>LumiBox</h2>
+        <p>基于 Python + PySide6 / Qt 6 构建的 Windows 桌面综合工具集。无边框窗口、自绘液态玻璃控件、亮 / 暗双主题，把日常高频的效率、开发、系统、文件与文档工具收进一个窗口。</p>
+        <div class="pill-row"><span class="pill">Python 3.10+</span><span class="pill">PySide6 / Qt 6</span><span class="pill">MIT</span><span class="pill">本地优先</span></div>
+      </div>
+    </div>
+
+    <div class="about-grid">
+      <div class="about-card glass reveal"><span class="aico">◉</span><h3>隐私优先</h3><p>所有计算本地完成。仅公网 IP 查询、网址可达性检测、下载测速三项会联网。密码保险箱使用主密码本地加密，作者与任何服务都无法找回。</p></div>
+      <div class="about-card glass reveal"><span class="aico">⌘</span><h3>逻辑与界面解耦</h3><p>纯逻辑集中在 <code>extra.py</code> / <code>power.py</code> / <code>doc_extra.py</code>，便于测试与复用；页面统一使用玻璃控件与公共辅助函数。</p></div>
+      <div class="about-card glass reveal"><span class="aico">◐</span><h3>亮暗双主题</h3><p>液态玻璃自绘控件，低亮度暗色降低长时间使用的疲劳感，文字对比度单独优化。</p></div>
+      <div class="about-card glass reveal"><span class="aico">◇</span><h3>开源与贡献</h3><p>MIT 协议，欢迎 Issue 与 PR。保持亮暗主题均正常、新逻辑与 UI 解耦即可。</p></div>
+    </div>
+
+    <div class="links-board glass reveal">
+      <h2>相关链接</h2>
+      <div class="link-list">
+        <a class="link-row" href="http://lumibox.jhhcn.icu/" target="_blank" rel="noopener">
+          <span class="lr-ico">⌂</span><span class="lr-main"><strong>官方网站</strong><small>lumibox.jhhcn.icu</small></span><span class="lr-tag">官网</span><span class="lr-arrow">↗</span>
+        </a>
+        <a class="link-row" href="https://github.com/ShuMu7891/LumiBox" data-go="repo">
+          <span class="lr-ico">⌘</span><span class="lr-main"><strong>GitHub 仓库</strong><small>源码 · README · 贡献指南</small></span><span class="lr-tag">源码</span><span class="lr-arrow">↗</span>
+        </a>
+        <a class="link-row" href="https://github.com/ShuMu7891/LumiBox/releases" data-go="releases">
+          <span class="lr-ico">↓</span><span class="lr-main"><strong>Releases</strong><small>v1.2.0 · LumiBox_win-toolbox.zip</small></span><span class="lr-tag">下载</span><span class="lr-arrow">↗</span>
+        </a>
+        <a class="link-row" href="https://github.com/ShuMu7891/LumiBox/issues" data-go="issues">
+          <span class="lr-ico">◇</span><span class="lr-main"><strong>Issues</strong><small>反馈问题与功能建议</small></span><span class="lr-tag">反馈</span><span class="lr-arrow">↗</span>
+        </a>
+      </div>
+      <p class="board-foot">官网地址：<a href="http://lumibox.jhhcn.icu/" target="_blank" rel="noopener">http://lumibox.jhhcn.icu/</a>　·　MIT © 2026 LumiBox Contributors</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== GitHub 重定向中转页 ==================== -->
+<section class="page" data-page="go">
+  <div class="wrap go-wrap">
+    <div class="go-card glass">
+      <div class="go-spinner"><span></span><span></span><span></span></div>
+      <div class="go-gh">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.11.79-.25.79-.56v-2.2c-3.22.7-3.9-1.37-3.9-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.16.08 1.78 1.2 1.78 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.57-.29-5.27-1.29-5.27-5.73 0-1.27.45-2.3 1.19-3.11-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.11 0 4.45-2.71 5.43-5.29 5.72.42.36.79 1.06.79 2.14v3.17c0 .31.21.68.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+      </div>
+      <span class="kicker">REDIRECTING</span>
+      <h1>正在前往 GitHub</h1>
+      <p id="goDesc">即将打开 LumiBox 仓库页面…</p>
+      <div class="go-url" id="goUrl">github.com/ShuMu7891/LumiBox</div>
+      <div class="go-progress"><i id="goBar"></i></div>
+      <div class="go-actions">
+        <a class="btn btn-primary" id="goNow" href="https://github.com/ShuMu7891/LumiBox" target="_blank" rel="noopener">立即前往</a>
+        <a class="btn btn-glass" href="#/" data-nav="home">返回首页</a>
+      </div>
+      <p class="go-tip">若没有自动跳转，请点击「立即前往」。</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ 页脚 ============ -->
+<footer class="footer glass">
+  <div class="wrap foot-in">
+    <div class="foot-brand"><span class="brand-mark sm">L</span><span>LumiBox <em>· Windows 综合工具箱</em></span></div>
+    <div class="foot-links">
+      <a href="http://lumibox.jhhcn.icu/" target="_blank" rel="noopener">官网</a>
+      <a href="https://github.com/ShuMu7891/LumiBox" data-go="repo">GitHub</a>
+      <a href="https://github.com/ShuMu7891/LumiBox/releases" data-go="releases">下载</a>
+      <a href="https://github.com/ShuMu7891/LumiBox/issues" data-go="issues">反馈</a>
+      <a href="#/about" data-nav="about">关于</a>
+    </div>
+    <div class="foot-copy">MIT © <span id="year">2026</span> LumiBox · 100% 本地运算</div>
+  </div>
+</footer>
+
+<!-- ============ 图片灯箱 ============ -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="界面截图预览">
+  <button class="lb-close" id="lbClose" type="button" aria-label="关闭">✕</button>
+  <button class="lb-nav lb-prev" id="lbPrev" type="button" aria-label="上一张">‹</button>
+  <div class="lb-stage"><img id="lbImg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""><div class="lb-cap"><span id="lbTitle"></span><span id="lbCount"></span></div></div>
+  <button class="lb-nav lb-next" id="lbNext" type="button" aria-label="下一张">›</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
