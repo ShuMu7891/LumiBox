@@ -22,6 +22,38 @@
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   } catch (e) {}
 </script>
+<script>
+  /* 静态镜像站没有留言后端：点「留言」或直接访问留言页时，统一跳到
+     带后端的在线服务，避免显示「未连接服务」。在线服务本身不跳（防循环）。
+     若你在自己的域名上跑起了 server.py，只需在更前面加一段内联脚本设置
+     window.LUMIBOX_GUESTBOOK_LOCAL = true 即可关闭跳转。*/
+  (function () {
+    var ONLINE_HOST = 'ac946317477e227e4.app.workbuddy.host';
+    var TARGET = 'https://' + ONLINE_HOST + '/?sharecode=W2NR267FYP&page=guestbook';
+    if (location.hostname === ONLINE_HOST) return;
+    if (window.LUMIBOX_GUESTBOOK_LOCAL === true) return;
+
+    // 收藏的旧链接（#/guestbook 或 ?page=guestbook）也一并跳过去
+    try {
+      var q = new URLSearchParams(location.search);
+      if (location.hash === '#/guestbook' || q.get('page') === 'guestbook') {
+        location.replace(TARGET);
+        return;
+      }
+    } catch (e) {}
+
+    function patchLinks() {
+      var links = document.querySelectorAll('a[href="#/guestbook"]');
+      for (var i = 0; i < links.length; i++) {
+        links[i].setAttribute('href', TARGET);
+        links[i].setAttribute('data-gb-redirect', '1');
+      }
+    }
+    if (document.readyState === 'loading')
+      document.addEventListener('DOMContentLoaded', patchLinks);
+    else patchLinks();
+  })();
+</script>
 </head>
 <body>
 

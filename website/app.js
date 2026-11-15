@@ -23,8 +23,18 @@
   var $  = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
+  /* 支持 ?page=xxx 直达：某些 App / 预览面板 / 分享渠道会吃掉或截断 #
+     及其后面的内容，纯查询参数更可靠。hash 路由仍然完全兼容。
+     查询参数只在首次加载时消费一次，之后以用户点击的 hash 为准。*/
+  var queryPage = new URLSearchParams(location.search).get('page');
+
   function parseHash() {
-    var raw = location.hash.replace(/^#\/?/, '') || 'home';
+    var h = location.hash;
+    var explicit = h && h !== '#' && h !== '#/';
+    var raw;
+    if (explicit) raw = h.replace(/^#\/?/, '');
+    else if (queryPage) { raw = queryPage; queryPage = null; }
+    else raw = 'home';
     var parts = raw.split('?');
     return { page: parts[0] || 'home', params: new URLSearchParams(parts[1] || '') };
   }
