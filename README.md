@@ -107,7 +107,7 @@ CPU / 内存 / 磁盘 / 交换分区实时监控、上下行网速、运行时�
 ### 方式一：一键安装（推荐）
 
 ```bash
-git clone https://github.com/<你的用户名>/LumiBox.git
+git clone https://github.com/ShuMu7891/LumiBox.git
 ```
 
 解压或克隆后，在 Windows 上：
