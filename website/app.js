@@ -274,7 +274,39 @@
       return '';                    // 同源：由 server.py 一起托管，或反代 /api
     }
 
-    function url(path) { return apiBase() + path; }
+    /* 发布网关要求每个请求都带 sharecode 查询参数（hash 不会发给服务器，
+       cookie 也可能在隐私模式/新标签里丢失）。这里统一给所有 API 请求补上，
+       兼容三种来源：当前页面 ?sharecode=、误拼到 hash 里的、以及 api 配置里自带的。*/
+    function shareCode() {
+      var re = /(?:[?&])sharecode=([A-Za-z0-9_-]+)/;
+      var m = re.exec(location.search) || re.exec(location.hash) || re.exec(apiBase());
+      return m ? m[1] : '';
+    }
+
+    function url(path) {
+      var base = apiBase();
+      var u;
+      if (!base) {
+        u = path;
+      } else {
+        var qi = base.indexOf('?');
+        if (qi >= 0) {
+          // api 基址自带查询串时（如 https://host/?sharecode=XXX），
+          // 路径要插在 ? 之前，并把基址的参数合并进路径已有的查询串，
+          // 否则会拼出两个 ? 或 /?sharecode=XXX/api/messages 这样的坏地址
+          var root = base.slice(0, qi).replace(/\/+$/, '');
+          var bq = base.slice(qi + 1);
+          u = root + path + (bq ? (path.indexOf('?') >= 0 ? '&' : '?') + bq : '');
+        } else {
+          u = base + path;
+        }
+      }
+      var sc = shareCode();
+      if (sc && !/(?:[?&])sharecode=/.test(u)) {
+        u += (u.indexOf('?') >= 0 ? '&' : '?') + 'sharecode=' + encodeURIComponent(sc);
+      }
+      return u;
+    }
 
     function status(kind, text) {
       var el = $('#gbStatus');
